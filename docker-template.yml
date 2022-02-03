@@ -62,7 +62,7 @@ services:
       retries: 3
 
   mq:
-    image: ghcr.io/uio-bmi/localega-broker-private:latest
+    image: ghcr.io/neicnordic/sda-mq:v1.3.0
     ports:
       - 5671:5671
       - 15671:15671
@@ -72,12 +72,14 @@ services:
         delay: 5s
         window: 120s
     environment:
-      - VIRTUAL_HOST={{PRIVATE_BROKER_VHOST}}
-      - SSL_VERIFY=verify_peer
-      - SSL_FAIL_IF_NO_PEER_CERT=false
-      - SSL_DEPTH=2
-      - USER_NAME={{PRIVATE_BROKER_USER}}
-      - PASSWORD_HASH={{PRIVATE_BROKER_HASH}}
+      - MQ_VHOST={{PRIVATE_BROKER_VHOST}}
+      - MQ_VERIFY=verify_peer
+      - MQ_USER={{PRIVATE_BROKER_USER}}
+      - MQ_PASSWORD_HASH={{PRIVATE_BROKER_HASH}}
+      - CEGA_CONNECTION={{CEGA_MQ_CONNECTION}}
+      - MQ_SERVER_CERT=/etc/rabbitmq/ssl.cert
+      - MQ_SERVER_KEY=/etc/rabbitmq/ssl.key
+      - MQ_CA=/etc/rabbitmq/CA.cert
     secrets:
       - source: server.pem
         target: /etc/rabbitmq/ssl.cert
