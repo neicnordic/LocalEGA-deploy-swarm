@@ -21,7 +21,7 @@ services:
       - /tmp/tsd:/tsd/p11/data/durable/apps/ega/
 
   db:
-    image: ghcr.io/neicnordic/sda-db:latest
+    image: ghcr.io/neicnordic/sda-db:v1.4.5
     ports:
       - 5432:5432
     deploy:
@@ -62,7 +62,7 @@ services:
       retries: 3
 
   mq:
-    image: ghcr.io/uio-bmi/localega-broker:latest
+    image: ghcr.io/uio-bmi/localega-broker:v1.0.0
     ports:
       - 5671:5671
       - 15671:15671
@@ -93,7 +93,7 @@ services:
 
   # Public stack
   proxy:
-    image: ghcr.io/uio-bmi/localega-tsd-proxy:latest
+    image: ghcr.io/uio-bmi/localega-tsd-proxy:v1.0.7
     ports:
       - 443:8080
     deploy:
@@ -131,7 +131,7 @@ services:
         target: /etc/ega/jwt/visa.pem
 
   interceptor:
-    image: ghcr.io/uio-bmi/mq-interceptor:latest
+    image: ghcr.io/uio-bmi/mq-interceptor:v1.0.0
     deploy:
       restart_policy:
         condition: on-failure
@@ -146,7 +146,7 @@ services:
       - LEGA_MQ_EXCHANGE=sda
 
   postgres:
-    image: postgres
+    image: postgres:latest
     ports:
       - 5433:5432
     deploy:
@@ -162,7 +162,7 @@ services:
 
   # Private stack
   ingest:
-    image: ghcr.io/neicnordic/sda-pipeline:latest
+    image: ghcr.io/neicnordic/sda-pipeline:v0.3.39
     deploy:
       restart_policy:
         condition: on-failure
@@ -219,7 +219,7 @@ services:
     command: "sda-ingest"
 
   verify:
-    image: ghcr.io/neicnordic/sda-pipeline:latest
+    image: ghcr.io/neicnordic/sda-pipeline:v0.3.39
     deploy:
       restart_policy:
         condition: on-failure
@@ -252,6 +252,8 @@ services:
       - DB_SSLMODE=require
       - DB_CLIENTCERT=/etc/ega/client.cert
       - DB_CLIENTKEY=/etc/ega/client-key.cert
+      - INBOX_TYPE=posix
+      - INBOX_LOCATION=/ega/inbox
       - LOG_LEVEL=debug
     secrets:
       - source: rootCA.pem
@@ -269,11 +271,12 @@ services:
       - source: ega.sec.pem
         target: /etc/ega/ega.sec
     volumes:
+      - /tmp/tsd:/ega/inbox
       - /tmp/vault:/ega/archive
     command: "sda-verify"
 
   finalize:
-    image: ghcr.io/neicnordic/sda-pipeline:latest
+    image: ghcr.io/neicnordic/sda-pipeline:v0.3.39
     deploy:
       restart_policy:
         condition: on-failure
@@ -319,7 +322,7 @@ services:
         mode: 0600
 
   mapper:
-    image: ghcr.io/neicnordic/sda-pipeline:latest
+    image: ghcr.io/neicnordic/sda-pipeline:v0.3.39
     deploy:
       restart_policy:
         condition: on-failure
@@ -364,7 +367,7 @@ services:
         mode: 0600
 
   doa:
-    image: neicnordic/sda-doa:release-v1.6.0
+    image: ghcr.io/neicnordic/sda-doa:testjava17_aug22
     ports:
       - 80:8080
     deploy:
