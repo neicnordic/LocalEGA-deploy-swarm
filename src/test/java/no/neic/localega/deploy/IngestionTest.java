@@ -95,12 +95,27 @@ public class IngestionTest {
     public void test() {
         try {
             upload();
-            Thread.sleep(10000); // wait for triggers to be set up at CEGA
-            ingest();
-            Thread.sleep(10000); // wait for ingestion and verification to be finished
-            verify();
-            map();
-            download();
+            Thread.sleep(5000); // wait for triggers to be set up at CEGA - Not really needed if using local CEGA container
+	    
+            triggerIngestMessageFromCEGA();
+            Thread.sleep(10000); // Wait for the LEGA ingest and verify services to complete,
+	                         // send verified message to CEGA, as well as for the finalize
+	                         // service to receive the accession message back from CEGA
+	                         // and update DB.
+	    
+	    // Verify that everything is ok so far
+            verifyAfterFinalizeAndLookUpAccessionID();
+
+	    // Trigger the process further,
+            // with retrieved information from earlier steps
+            triggerMappingMessageFromCEGA();
+
+	    // No wait needed here probably? Prev mapping step is pretty quick.
+
+            
+            // Test and check that what we get out match the original
+            // inserted data at the top 
+            downloadDatasetAndVerifyResults();
         } catch (Throwable t) {
             log.error(t.getMessage(), t);
             Assert.fail();
@@ -137,7 +152,7 @@ public class IngestionTest {
         Assert.assertEquals(201, jsonResponse.getObject().getInt("statusCode"));
     }
 
-    private void ingest() throws IOException, TimeoutException, NoSuchAlgorithmException, KeyManagementException, URISyntaxException {
+    private void triggerIngestMessageFromCEGA() throws IOException, TimeoutException, NoSuchAlgorithmException, KeyManagementException, URISyntaxException {
         log.info("Publishing ingestion message to CentralEGA...");
         String mqConnectionString = System.getenv("CEGA_MQ_CONNECTION");
         ConnectionFactory factory = new ConnectionFactory();
@@ -164,7 +179,7 @@ public class IngestionTest {
     }
 
     @SuppressWarnings({"SqlResolve", "SqlNoDataSourceInspection"})
-    private void verify() throws SQLException {
+    private void verifyAfterFinalizeAndLookUpAccessionID() throws SQLException {
         log.info("Starting verification...");
         String dbHost = "localhost";
         String port = "5432";
@@ -194,7 +209,7 @@ public class IngestionTest {
         log.info("Verification completed successfully");
     }
 
-    private void map() throws NoSuchAlgorithmException, KeyManagementException, URISyntaxException, IOException, TimeoutException {
+    private void triggerMappingMessageFromCEGA() throws NoSuchAlgorithmException, KeyManagementException, URISyntaxException, IOException, TimeoutException {
         log.info("Mapping file to a dataset...");
 
         datasetId = "EGAD" + getRandomNumber(11);
@@ -226,7 +241,7 @@ public class IngestionTest {
         log.info("Permissions granted successfully");
     }
 
-    private void download() throws GeneralSecurityException, IOException {
+    private void downloadDatasetAndVerifyResults() throws GeneralSecurityException, IOException {
         String token = generateVisaToken(datasetId);
         log.info("Visa JWT token: {}", token);
 
